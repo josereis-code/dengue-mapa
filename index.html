@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dengue Focus Mapping</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY"></script>
+    <script>
+        let map;
+
+        function initMap() {
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: { lat: -23.5505, lng: -46.6333 }, // São Paulo coordinates
+                zoom: 12
+            });
+        }
+
+        function addMarker(location) {
+            new google.maps.Marker({
+                position: location,
+                map: map,
+            });
+        }
+
+        function fetchDengueData() {
+            // Assuming you have a Google Apps Script web app endpoint
+            fetch('https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec')
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(location => {
+                        addMarker({ lat: location.lat, lng: location.lng });
+                    });
+                });
+        }
+
+        window.onload = function() {
+            initMap();
+            fetchDengueData();
+        };
+    </script>
+</head>
+<body>
+    <h1>Dengue Focus Mapping</h1>
+    <div id="map" style="height: 500px; width: 100%;"></div>
+</body>
+</html>
