@@ -1,0 +1,30 @@
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f9f9f9;
+}
+
+.map {
+  width: 100%;
+  height: 100%;
+  border: 2px solid #ccc;
+}
+
+.marker {
+  background-color: red;
+  border-radius: 50%;
+  width: 15px;
+  height: 15px;
+  position: absolute;
+}
+
+.info {
+  position: absolute;
+  background-color: white;
+  border: 1px solid #ccc;
+  padding: 5px;
+  border-radius: 5px;
+  font-size: 14px;
+}
