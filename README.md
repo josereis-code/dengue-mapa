@@ -147,17 +147,30 @@ window.APP_CONFIG = {
 ### Atualizar Dados
 - Clique em "Atualizar" para recarregar os dados do servidor
 
-## Variáveis de Ambiente
+## Configuração da Aplicação
 
-Para usar variáveis de ambiente em produção:
+### Método 1: Configuração Direta (Recomendado para GitHub Pages)
+
+Edite diretamente o arquivo `index.html`:
+
+```javascript
+window.APP_CONFIG = {
+    GOOGLE_MAPS_API_KEY: 'SUA_API_KEY_AQUI',
+    APPS_SCRIPT_URL: 'https://script.google.com/macros/s/SEU_SCRIPT_ID/exec'
+};
+```
+
+**Importante**: Para GitHub Pages, use este método. Substitua os valores diretamente no código.
+
+### Método 2: Variáveis de Ambiente (Para builds com bundler)
+
+Se estiver usando um bundler como Webpack ou Vite:
 
 ```bash
 # .env (não versionar este arquivo)
 GOOGLE_MAPS_API_KEY=AIzaSy...
 APPS_SCRIPT_URL=https://script.google.com/macros/s/.../exec
 ```
-
-No `index.html`, o código já está preparado para ler essas variáveis.
 
 ## Estrutura de Dados
 
