@@ -1,46 +1,171 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dengue Focus Mapping</title>
-    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY"></script>
+    <title>Dengue Focus Mapping - Mapeamento de Focos de Dengue</title>
+    <meta name="description" content="Sistema de mapeamento e registro de focos de dengue">
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Maps API will be loaded asynchronously with environment variable -->
     <script>
-        let map;
-
-        function initMap() {
-            map = new google.maps.Map(document.getElementById('map'), {
-                center: { lat: -23.5505, lng: -46.6333 }, // São Paulo coordinates
-                zoom: 12
-            });
-        }
-
-        function addMarker(location) {
-            new google.maps.Marker({
-                position: location,
-                map: map,
-            });
-        }
-
-        function fetchDengueData() {
-            // Assuming you have a Google Apps Script web app endpoint
-            fetch('https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec')
-                .then(response => response.json())
-                .then(data => {
-                    data.forEach(location => {
-                        addMarker({ lat: location.lat, lng: location.lng });
-                    });
-                });
-        }
-
-        window.onload = function() {
-            initMap();
-            fetchDengueData();
+        window.APP_CONFIG = {
+            GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY',
+            APPS_SCRIPT_URL: process.env.APPS_SCRIPT_URL || 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec'
         };
     </script>
 </head>
 <body>
-    <h1>Dengue Focus Mapping</h1>
-    <div id="map" style="height: 500px; width: 100%;"></div>
+    <header class="header">
+        <div class="container header-content">
+            <h1>🦟 Dengue Focus Mapping</h1>
+            <p class="subtitle">Sistema de Mapeamento de Focos de Dengue</p>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <!-- Loading Indicator -->
+            <div id="loading" class="loading hidden">
+                <div class="spinner"></div>
+                <p>Carregando mapa...</p>
+            </div>
+
+            <!-- Status Messages -->
+            <div id="status-message" class="status-message hidden"></div>
+
+            <!-- Controls Section -->
+            <section class="controls-section">
+                <div class="controls-grid">
+                    <button id="btn-add-focus" class="btn btn-primary" onclick="app.openModal()">
+                        <span class="icon">+</span> Novo Foco
+                    </button>
+                    <button id="btn-refresh" class="btn btn-secondary" onclick="app.refreshData()">
+                        <span class="icon">🔄</span> Atualizar
+                    </button>
+                    <div class="filter-group">
+                        <label for="filter-status">Filtrar por status:</label>
+                        <select id="filter-status" onchange="app.filterByStatus(this.value)">
+                            <option value="all">Todos</option>
+                            <option value="active">Ativos</option>
+                            <option value="resolved">Resolvidos</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Map Section -->
+            <section class="map-section">
+                <div id="map" class="map-container" role="application" aria-label="Mapa de focos de dengue"></div>
+                <div id="map-info" class="map-info">
+                    <span id="marker-count">0</span> focos exibidos
+                </div>
+            </section>
+
+            <!-- Statistics Section -->
+            <section class="stats-section">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Total de Focos</h3>
+                        <p id="stat-total" class="stat-value">0</p>
+                    </div>
+                    <div class="stat-card stat-active">
+                        <h3>Focos Ativos</h3>
+                        <p id="stat-active" class="stat-value">0</p>
+                    </div>
+                    <div class="stat-card stat-resolved">
+                        <h3>Resolvidos</h3>
+                        <p id="stat-resolved" class="stat-value">0</p>
+                    </div>
+                    <div class="stat-card stat-today">
+                        <h3>Hoje</h3>
+                        <p id="stat-today" class="stat-value">0</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Modal for Adding New Focus -->
+    <div id="modal-add-focus" class="modal hidden" role="dialog" aria-labelledby="modal-title" aria-modal="true">
+        <div class="modal-overlay" onclick="app.closeModal()"></div>
+        <div class="modal-content">
+            <header class="modal-header">
+                <h2 id="modal-title">Cadastrar Novo Foco</h2>
+                <button class="modal-close" onclick="app.closeModal()" aria-label="Fechar">&times;</button>
+            </header>
+            
+            <form id="form-add-focus" onsubmit="app.handleSubmit(event)" class="focus-form">
+                <div class="form-group">
+                    <label for="endereco">Endereço *</label>
+                    <input type="text" id="endereco" name="endereco" required 
+                           placeholder="Digite o endereço completo"
+                           aria-required="true">
+                    <small id="endereco-error" class="error-message hidden"></small>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="latitude">Latitude</label>
+                        <input type="number" id="latitude" name="latitude" step="any" 
+                               placeholder="-23.5505" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="longitude">Longitude</label>
+                        <input type="number" id="longitude" name="longitude" step="any" 
+                               placeholder="-46.6333" readonly>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-small btn-secondary" onclick="app.geocodeAddress()">
+                    📍 Obter Coordenadas do Endereço
+                </button>
+
+                <div class="form-group">
+                    <label for="descricao">Descrição *</label>
+                    <textarea id="descricao" name="descricao" rows="3" required 
+                              placeholder="Descreva o foco encontrado (ex: água parada, pneus, etc.)"
+                              aria-required="true"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="data">Data do Foco *</label>
+                    <input type="date" id="data" name="data" required aria-required="true">
+                </div>
+
+                <div class="form-group">
+                    <label for="foto_url">URL da Foto (opcional)</label>
+                    <input type="url" id="foto_url" name="foto_url" 
+                           placeholder="https://exemplo.com/foto.jpg">
+                    <small>Link para foto hospedada externamente</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="status">Status</label>
+                    <select id="status" name="status">
+                        <option value="active">Ativo</option>
+                        <option value="resolved">Resolvido</option>
+                    </select>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="app.closeModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btn-submit">
+                        <span class="btn-text">Cadastrar Foco</span>
+                        <span class="btn-loading hidden">Cadastrando...</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Dengue Focus Mapping. Todos os direitos reservados.</p>
+            <p class="footer-note">Projeto educacional para mapeamento de focos de dengue.</p>
+        </div>
+    </footer>
+
+    <!-- Load main script -->
+    <script src="script.js" defer></script>
 </body>
 </html>
